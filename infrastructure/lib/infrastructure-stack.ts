@@ -13,6 +13,7 @@ import {
 } from 'aws-cdk-lib/aws-iam';
 import {NodejsFunction} from 'aws-cdk-lib/aws-lambda-nodejs';
 import path = require('path');
+import {randomUUID} from 'crypto';
 
 interface AuthTokenOptions {
   // The name you would like to give to the Secret containing your Momento auth token, 
@@ -61,7 +62,7 @@ export class InfrastructureStack extends cdk.Stack {
         );
         momentoAuthTokenSecret.push(new secretsmanager.Secret(
           this,
-          'momento-auth-token-secret',
+          `momento-auth-token-secret-${randomUUID()}`,
           {
             secretName: name,
             encryptionKey: kms.Key.fromKeyArn(
@@ -74,7 +75,7 @@ export class InfrastructureStack extends cdk.Stack {
       } else {
         momentoAuthTokenSecret.push(new secretsmanager.Secret(
           this,
-          'momento-auth-token-secret',
+          `momento-auth-token-secret-${randomUUID()}`,
           {
             secretName: name,
           }
@@ -129,7 +130,7 @@ export class InfrastructureStack extends cdk.Stack {
     func.grantInvoke(new iam.ServicePrincipal('secretsmanager.amazonaws.com'));
 
     momentoAuthTokenSecret.forEach((secret) => {
-      secret.addRotationSchedule('auth-token-refresh-schedule', {
+      secret.addRotationSchedule(`auth-token-refresh-schedule-${randomUUID()}`, {
         rotationLambda: func,
         automaticallyAfter: Duration.days(
           authTokenOptions.rotateAutomaticallyAfterInDays
@@ -139,7 +140,7 @@ export class InfrastructureStack extends cdk.Stack {
   }
 
   private getAuthTokenSecretNames(secretNames?: string[]): string[] {
-    return (secretNames && secretNames.length !== 0) ? secretNames : ['momento/authentication-token']
+    return (secretNames && secretNames.length !== 0) ? secretNames : ['momento/authentication-token-0','momento/authentication-token-1']
   }
 
   private getResourcePermissions(secretNames: string[]): string[] {
