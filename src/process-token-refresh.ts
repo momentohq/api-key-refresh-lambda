@@ -202,6 +202,17 @@ export class ProcessTokenRefresh {
     secretId: string,
     versionId: string | undefined
   ): Promise<void> {
+    const getPendingTokenStatus = await this.getTokenStatus(
+      secretId,
+      SECRET_PENDING
+    );
+
+    if (getPendingTokenStatus !== TokenStatus.VALID) {
+      Common.logAndThrow(
+        `Found non-valid token when finishing secret rotation, not setting pending token to current, token state ${getPendingTokenStatus.toString()}.`
+      );
+    }
+
     const versions: Record<string, string[]> =
       await this.momentoSecrets.describeSecret(secretId);
 
@@ -243,15 +254,17 @@ export class ProcessTokenRefresh {
     );
 
     if (!currentAuthTokenString) {
-      Common.logAndThrow('Could not get valid secret');
+      return TokenStatus.INVALID;
     }
-    const secretFromManager = SecretManagerTokenStore.fromString(
-      currentAuthTokenString
-    );
 
-    return await this.momentoRefresh.isValidAuthToken(
-      secretFromManager,
-      secretStage
-    );
+    try {
+      return await this.momentoRefresh.isValidAuthToken(
+        SecretManagerTokenStore.fromString(currentAuthTokenString),
+        secretStage
+      );
+    } catch (err) {
+      console.log(err);
+      return TokenStatus.INVALID;
+    }
   }
 }

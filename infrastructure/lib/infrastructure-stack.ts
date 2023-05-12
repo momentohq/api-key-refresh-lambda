@@ -35,7 +35,7 @@ export class InfrastructureStack extends cdk.Stack {
     super(scope, id, stackProps);
 
     const authTokenNames = this.getAuthTokenSecretNames(authTokenOptions.momentoAuthTokenSecretName)
-    let momentoAuthTokenSecret: secretsmanager.Secret[] = [];
+    let momentoAuthTokenSecret: Map<string, secretsmanager.Secret> = new Map<string, secretsmanager.Secret>();
 
     const lambdaRole = new iam.Role(
       this,
@@ -60,9 +60,9 @@ export class InfrastructureStack extends cdk.Stack {
             resources: [authTokenOptions.kmsKeyArn],
           })
         );
-        momentoAuthTokenSecret.push(new secretsmanager.Secret(
+        momentoAuthTokenSecret.set(name, new secretsmanager.Secret(
           this,
-          `momento-auth-token-secret-${randomUUID()}`,
+          `momento-auth-token-secret-${name}}`,
           {
             secretName: name,
             encryptionKey: kms.Key.fromKeyArn(
@@ -73,9 +73,9 @@ export class InfrastructureStack extends cdk.Stack {
           }
         ));
       } else {
-        momentoAuthTokenSecret.push(new secretsmanager.Secret(
+        momentoAuthTokenSecret.set(name, new secretsmanager.Secret(
           this,
-          `momento-auth-token-secret-${randomUUID()}`,
+          `momento-auth-token-secret-${name}`,
           {
             secretName: name,
           }
@@ -129,8 +129,8 @@ export class InfrastructureStack extends cdk.Stack {
 
     func.grantInvoke(new iam.ServicePrincipal('secretsmanager.amazonaws.com'));
 
-    momentoAuthTokenSecret.forEach((secret) => {
-      secret.addRotationSchedule(`auth-token-refresh-schedule-${randomUUID()}`, {
+    momentoAuthTokenSecret.forEach((secret, name) => {
+      secret.addRotationSchedule(`auth-token-refresh-schedule-for-${name}`, {
         rotationLambda: func,
         automaticallyAfter: Duration.days(
           authTokenOptions.rotateAutomaticallyAfterInDays
@@ -140,7 +140,7 @@ export class InfrastructureStack extends cdk.Stack {
   }
 
   private getAuthTokenSecretNames(secretNames?: string[]): string[] {
-    return (secretNames && secretNames.length !== 0) ? secretNames : ['momento/authentication-token-0','momento/authentication-token-1']
+    return (secretNames && secretNames.length !== 0) ? secretNames : ['momento/authentication-token']
   }
 
   private getResourcePermissions(secretNames: string[]): string[] {
