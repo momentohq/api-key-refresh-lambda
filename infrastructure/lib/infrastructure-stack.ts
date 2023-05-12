@@ -1,5 +1,5 @@
 import * as cdk from 'aws-cdk-lib';
-import {Duration} from 'aws-cdk-lib';
+import {Duration, Fn} from 'aws-cdk-lib';
 import {Construct} from 'constructs';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as iam from 'aws-cdk-lib/aws-iam';
@@ -15,8 +15,9 @@ import {NodejsFunction} from 'aws-cdk-lib/aws-lambda-nodejs';
 import path = require('path');
 
 interface AuthTokenOptions {
-  // The name you would like to give to the Secret containing your Momento auth token
-  momentoAuthTokenSecretName?: string;
+  // The name you would like to give to the Secret containing your Momento auth token, 
+  // multiple secrets can be refreshed by adding a comma spliced list
+  momentoAuthTokenSecretName?: string[];
   // Override this if you wish to change when the secret is automatically rotated.
   rotateAutomaticallyAfterInDays: number;
   // Override this if you are not using the default AWS KMS key for your secret
@@ -32,10 +33,8 @@ export class InfrastructureStack extends cdk.Stack {
   ) {
     super(scope, id, stackProps);
 
-    const authTokenName = authTokenOptions.momentoAuthTokenSecretName
-      ? authTokenOptions.momentoAuthTokenSecretName
-      : 'momento/authentication-token';
-    let momentoAuthTokenSecret: secretsmanager.Secret;
+    const authTokenNames = this.getAuthTokenSecretNames(authTokenOptions.momentoAuthTokenSecretName)
+    let momentoAuthTokenSecret: secretsmanager.Secret[] = [];
 
     const lambdaRole = new iam.Role(
       this,
@@ -51,35 +50,38 @@ export class InfrastructureStack extends cdk.Stack {
         ],
       }
     );
-    if (authTokenOptions.kmsKeyArn !== undefined) {
-      lambdaRole.addToPolicy(
-        new PolicyStatement({
-          effect: Effect.ALLOW,
-          actions: ['kms:Decrypt', 'kms:GenerateDataKey'],
-          resources: [authTokenOptions.kmsKeyArn],
-        })
-      );
-      momentoAuthTokenSecret = new secretsmanager.Secret(
-        this,
-        'momento-auth-token-secret',
-        {
-          secretName: authTokenName,
-          encryptionKey: kms.Key.fromKeyArn(
-            this,
-            'secret-kms-key',
-            authTokenOptions.kmsKeyArn
-          ),
-        }
-      );
-    } else {
-      momentoAuthTokenSecret = new secretsmanager.Secret(
-        this,
-        'momento-auth-token-secret',
-        {
-          secretName: authTokenName,
-        }
-      );
-    }
+    authTokenNames.forEach((name: string) => {
+      if (authTokenOptions.kmsKeyArn !== undefined) {
+        lambdaRole.addToPolicy(
+          new PolicyStatement({
+            effect: Effect.ALLOW,
+            actions: ['kms:Decrypt', 'kms:GenerateDataKey'],
+            resources: [authTokenOptions.kmsKeyArn],
+          })
+        );
+        momentoAuthTokenSecret.push(new secretsmanager.Secret(
+          this,
+          'momento-auth-token-secret',
+          {
+            secretName: name,
+            encryptionKey: kms.Key.fromKeyArn(
+              this,
+              'secret-kms-key',
+              authTokenOptions.kmsKeyArn
+            ),
+          }
+        ));
+      } else {
+        momentoAuthTokenSecret.push(new secretsmanager.Secret(
+          this,
+          'momento-auth-token-secret',
+          {
+            secretName: name,
+          }
+        ));
+      }
+    });
+
     lambdaRole.addToPolicy(
       new PolicyStatement({
         effect: Effect.ALLOW,
@@ -88,16 +90,16 @@ export class InfrastructureStack extends cdk.Stack {
           'secretsmanager:CreateSecret',
           'secretsmanager:PutSecretValue',
           'secretsmanager:DescribeSecret',
-          'secretsmanager:UpdateSecretVersionStage',
+          'secretsmanager:UpdateversionIdStage',
         ],
-        resources: ['*'],
+        resources: this.getResourcePermissions(authTokenNames),
       })
     );
     lambdaRole.addToPolicy(
       new PolicyStatement({
         effect: Effect.ALLOW,
         actions: ['secretsmanager:GetSecretValue'],
-        resources: ['*'],
+        resources: this.getResourcePermissions(authTokenNames),
       })
     );
 
@@ -112,7 +114,7 @@ export class InfrastructureStack extends cdk.Stack {
       this,
       'momento-auth-token-refresh-lambda',
       {
-        runtime: lambda.Runtime.NODEJS_16_X,
+        runtime: lambda.Runtime.NODEJS_18_X,
         entry: path.join(__dirname, '/../../src/index.ts'),
         projectRoot: path.join(__dirname, '/../..'),
         depsLockFilePath: path.join(__dirname, '/../../package-lock.json'),
@@ -126,11 +128,23 @@ export class InfrastructureStack extends cdk.Stack {
 
     func.grantInvoke(new iam.ServicePrincipal('secretsmanager.amazonaws.com'));
 
-    momentoAuthTokenSecret.addRotationSchedule('auth-token-refresh-schedule', {
-      rotationLambda: func,
-      automaticallyAfter: Duration.days(
-        authTokenOptions.rotateAutomaticallyAfterInDays
-      ),
+    momentoAuthTokenSecret.forEach((secret) => {
+      secret.addRotationSchedule('auth-token-refresh-schedule', {
+        rotationLambda: func,
+        automaticallyAfter: Duration.days(
+          authTokenOptions.rotateAutomaticallyAfterInDays
+        ),
+      });
+    });
+  }
+
+  private getAuthTokenSecretNames(secretNames?: string[]): string[] {
+    return (secretNames && secretNames.length !== 0) ? secretNames : ['momento/authentication-token']
+  }
+
+  private getResourcePermissions(secretNames: string[]): string[] {
+    return secretNames.map((names: string) => {
+      return Fn.sub('arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:' + names + '*')
     });
   }
 }

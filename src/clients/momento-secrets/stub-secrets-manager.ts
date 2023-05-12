@@ -40,7 +40,7 @@ export class MomentoStubSecretsManager implements MomentoSecrets {
   async updateVersionStage(
     secretId: string,
     versionStage: string,
-    moveToVersionId: string,
+    moveToVersionId: string | undefined,
     removeFromVersionId: string | undefined
   ): Promise<void> {
     console.log('updateVersionStage called');

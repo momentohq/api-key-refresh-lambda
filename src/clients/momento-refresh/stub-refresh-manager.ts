@@ -1,17 +1,28 @@
-import {RefreshApiToken} from '@gomomento/sdk';
-import {ExpiresAt} from '@gomomento/sdk-core/dist/src';
+import {RefreshAuthToken} from '@gomomento/sdk';
+import {ExpiresAt} from '@gomomento/sdk-core';
 import {MomentoRefresh} from './momento-refresh';
 import {SecretManagerTokenStore} from '../../models/secret-manager-token';
+import {TokenStatus} from '../../utils/token-status';
+import {Common} from '../../utils/common';
 
 export class MomentoStubRefreshManager implements MomentoRefresh {
-  public async refreshApiToken(
-    _currentApiToken: SecretManagerTokenStore
-  ): Promise<RefreshApiToken.Success> {
-    return new RefreshApiToken.Success(
+  public async refreshAuthToken(
+    _currentAuthToken: SecretManagerTokenStore
+  ): Promise<RefreshAuthToken.Success> {
+    return new RefreshAuthToken.Success(
       'apiToken',
       'refreshToken',
       'endpoint',
       ExpiresAt.fromEpoch(1683692355)
     );
+  }
+  public async isValidAuthToken(
+    _authToken: SecretManagerTokenStore,
+    versionStage: string | undefined
+  ): Promise<TokenStatus> {
+    if (!versionStage) {
+      return TokenStatus.NOT_TESTED;
+    }
+    return Common.getEnv().mockTokenStatus.get(versionStage)!;
   }
 }

@@ -19,7 +19,7 @@ export interface MomentoSecrets {
   updateVersionStage(
     secretId: string,
     versionStage: string,
-    moveToVersionId: string,
+    moveToVersionId: string | undefined,
     removeFromVersionId: string | undefined
   ): Promise<void>;
 }

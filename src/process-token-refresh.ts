@@ -1,166 +1,206 @@
 import {ResourceNotFoundException} from '@aws-sdk/client-secrets-manager';
+
 import {SecretManagerTokenStore} from './models/secret-manager-token';
+
 import {MomentoSecrets} from './clients/momento-secrets/momento-secrets';
 import {MomentoRefresh} from './clients/momento-refresh/momento-refresh';
+import {MomentoCloudWatch} from './clients/momento-cloudwatch/momento-cloudwatch';
 import {ClientFactory} from './clients/client-factory';
-import {
-  AuthTokenRefreshManager,
-  SecretCommandSteps,
-} from './auth-token-refresh-manager';
 
-const SECRET_CURRENT = 'AWSCURRENT';
-const SECRET_PENDING = 'AWSPENDING';
+import {Common, SECRET_CURRENT, SECRET_PENDING} from './utils/common';
+import {SecretCommandSteps} from './utils/secret-command-steps';
+import {AuthRefreshMetrics} from './utils/auth-refresh-metrics';
+import {TokenStatus} from './utils/token-status';
 
 export class ProcessTokenRefresh {
   private readonly momentoSecrets: MomentoSecrets;
   private readonly momentoRefresh: MomentoRefresh;
+  private readonly momentoCloudwatch: MomentoCloudWatch;
 
   constructor() {
-    const {useStub} = AuthTokenRefreshManager.getEnv();
+    const {useStub} = Common.getEnv();
     this.momentoSecrets = ClientFactory.getMomentoSecretsManager(useStub);
     this.momentoRefresh = ClientFactory.getMomentoRefreshManager(useStub);
+    this.momentoCloudwatch = ClientFactory.getMomentoCloudWatchManger(useStub);
   }
 
   public async manualRotation(secretId: string): Promise<string> {
-    let currentApiToken = undefined;
-    try {
-      currentApiToken = await this.momentoSecrets.getSecret(
-        secretId,
-        undefined,
-        undefined
-      );
-    } catch (error) {
-      if (error instanceof ResourceNotFoundException) {
-        console.error(
-          `Failed to find secret. Please create a new secret at this arn, ${secretId}, api key can be generated through momento console.`
-        );
-        throw error;
-      } else {
-        throw error;
-      }
-    }
-
-    if (!currentApiToken) {
-      AuthTokenRefreshManager.logAndThrow('Failed to get a valid');
-    }
-
-    const currentToken = SecretManagerTokenStore.fromString(currentApiToken);
-    const newTokenResponse = await this.momentoRefresh.refreshApiToken(
-      currentToken
-    );
-    const newTokenStore =
-      SecretManagerTokenStore.fromRefreshApiTokenResponse(newTokenResponse);
-
-    await this.momentoSecrets.putSecret(
+    await this.rotationRequestHandler(
+      SecretCommandSteps.createSecret,
       secretId,
-      newTokenStore.toString(),
-      undefined,
       undefined
     );
-    console.log(`Successfully rotated authentication token for ${secretId}.`);
+    await this.rotationRequestHandler(
+      SecretCommandSteps.setSecret,
+      secretId,
+      undefined
+    );
+    await this.rotationRequestHandler(
+      SecretCommandSteps.testSecret,
+      secretId,
+      undefined
+    );
+    await this.rotationRequestHandler(
+      SecretCommandSteps.finishSecret,
+      secretId,
+      undefined
+    );
     return 'ManualRotation: Success';
   }
 
   public async automaticRotation(
     secretId: string,
-    requestToken: string,
+    versionId: string,
     step: SecretCommandSteps
   ): Promise<string> {
     const secretMetadata = await this.momentoSecrets.describeSecret(secretId);
 
-    if (!secretMetadata[requestToken]) {
-      AuthTokenRefreshManager.logAndThrow(
-        `Secret version ${requestToken} has no stage for rotation of secret ${secretId}.`
+    if (!secretMetadata[versionId]) {
+      Common.logAndThrow(
+        `Secret version ${versionId} has no stage for rotation of secret ${secretId}.`
       );
     }
-    if (secretMetadata[requestToken].includes(SECRET_CURRENT)) {
+    if (secretMetadata[versionId].includes(SECRET_CURRENT)) {
       console.log(
-        `Secret version ${requestToken} is AWSCURRENT for rotation of secret ${secretId}, nothing to do.`
+        `Secret version ${versionId} is AWSCURRENT for rotation of secret ${secretId}, nothing to do.`
       );
       return 'Rotation: no-op';
-    } else if (!secretMetadata[requestToken].includes(SECRET_PENDING)) {
-      AuthTokenRefreshManager.logAndThrow(
-        `Secret version ${requestToken} not set as AWSPENDING for rotation of secret ${secretId}`
+    } else if (!secretMetadata[versionId].includes(SECRET_PENDING)) {
+      Common.logAndThrow(
+        `Secret version ${versionId} not set as AWSPENDING for rotation of secret ${secretId}`
       );
     }
 
-    return await this.rotationRequestHandler(step, secretId, requestToken);
+    return await this.rotationRequestHandler(step, secretId, versionId);
   }
 
   private async rotationRequestHandler(
     step: SecretCommandSteps,
     secretId: string,
-    requestToken: string
+    versionId: string | undefined
   ): Promise<string> {
     switch (step) {
       case SecretCommandSteps.createSecret:
-        await this.createSecret(secretId, requestToken);
+        await this.createSecret(secretId, versionId);
         return `${SecretCommandSteps.createSecret.toString()}: Success`;
       case SecretCommandSteps.setSecret:
         return `${SecretCommandSteps.setSecret.toString()}: no-op`;
       case SecretCommandSteps.testSecret:
-        return `${SecretCommandSteps.testSecret.toString()}: no-op`;
+        if (Common.getEnv().skipTestingStage) {
+          return `${SecretCommandSteps.testSecret.toString()}: no-op`;
+        } else {
+          await this.testSecret(secretId);
+          return `${SecretCommandSteps.testSecret.toString()}: Success`;
+        }
       case SecretCommandSteps.finishSecret:
-        await this.finishSecret(secretId, requestToken);
+        await this.finishSecret(secretId, versionId);
         return `${SecretCommandSteps.finishSecret.toString()}: Success`;
     }
   }
 
   private async createSecret(
     secretId: string,
-    requestToken: string
+    versionId: string | undefined
   ): Promise<void> {
-    const currentApiTokenString = await this.momentoSecrets.getSecret(
+    const currentAuthTokenString = await this.momentoSecrets.getSecret(
       secretId,
       undefined,
       SECRET_CURRENT
     );
-    if (!currentApiTokenString) {
-      AuthTokenRefreshManager.logAndThrow('Could not get valid secret');
+    if (!currentAuthTokenString) {
+      Common.logAndThrow('Could not get valid secret');
     }
 
     const currentToken = SecretManagerTokenStore.fromString(
-      currentApiTokenString
+      currentAuthTokenString
     );
 
     try {
-      await this.momentoSecrets.getSecret(
-        secretId,
-        requestToken,
-        SECRET_PENDING
-      );
+      await this.momentoSecrets.getSecret(secretId, versionId, SECRET_PENDING);
       console.log(
         `${SecretCommandSteps.createSecret.toString()}: Successfully retrieved secret for ${secretId}.`
       );
     } catch (error) {
       if (error instanceof ResourceNotFoundException) {
-        const refreshApiTokenResponse =
-          await this.momentoRefresh.refreshApiToken(currentToken);
+        const refreshAuthTokenResponse =
+          await this.momentoRefresh.refreshAuthToken(currentToken);
         const newTokenStore =
-          SecretManagerTokenStore.fromRefreshApiTokenResponse(
-            refreshApiTokenResponse
+          SecretManagerTokenStore.fromRefreshAuthTokenResponse(
+            refreshAuthTokenResponse
           );
 
         await this.momentoSecrets.putSecret(
           secretId,
           newTokenStore.toString(),
-          requestToken,
+          versionId,
           [SECRET_PENDING]
         );
 
         console.log(
           `${SecretCommandSteps.createSecret.toString()}: Successfully put secret for ${secretId}.`
         );
-
       } else {
         throw error;
       }
     }
   }
 
+  private async testSecret(secretId: string): Promise<void> {
+    console.log('Testing staged pending token');
+
+    const pendingTokenStatus = await this.getTokenStatus(
+      secretId,
+      SECRET_PENDING
+    );
+
+    console.log(`Token test response: ${pendingTokenStatus.toString()}`);
+
+    switch (pendingTokenStatus) {
+      case TokenStatus.VALID:
+        console.log('Valid api token, nothing else to do.');
+        break;
+      case TokenStatus.INVALID:
+        {
+          const currentTokenStatus = await this.getTokenStatus(
+            secretId,
+            SECRET_CURRENT
+          );
+          switch (currentTokenStatus) {
+            case TokenStatus.VALID:
+              console.log('Current staged secret is valid');
+              break;
+            case TokenStatus.NOT_TESTED:
+              await this.momentoCloudwatch.emitMetric(
+                AuthRefreshMetrics.FailToTest,
+                secretId,
+                SECRET_CURRENT
+              );
+              break;
+            case TokenStatus.INVALID:
+              await this.momentoCloudwatch.emitMetric(
+                AuthRefreshMetrics.NoValidTokens,
+                secretId,
+                SECRET_CURRENT
+              );
+              Common.logAndThrow(
+                `Failed to refresh api token for secret, ${secretId}`
+              );
+          }
+        }
+        break;
+      case TokenStatus.NOT_TESTED:
+        await this.momentoCloudwatch.emitMetric(
+          AuthRefreshMetrics.FailToTest,
+          secretId,
+          SECRET_PENDING
+        );
+        break;
+    }
+  }
+
   private async finishSecret(
     secretId: string,
-    requestToken: string
+    versionId: string | undefined
   ): Promise<void> {
     const versions: Record<string, string[]> =
       await this.momentoSecrets.describeSecret(secretId);
@@ -168,7 +208,7 @@ export class ProcessTokenRefresh {
     let currentVersion = undefined;
     for (const item in versions) {
       if (versions[item].includes(SECRET_CURRENT)) {
-        if (requestToken === item) {
+        if (versionId === item) {
           console.log(
             `${SecretCommandSteps.finishSecret.toString()}: Version ${item} already marked as ${SECRET_CURRENT} for ${secretId}`
           );
@@ -182,11 +222,36 @@ export class ProcessTokenRefresh {
     await this.momentoSecrets.updateVersionStage(
       secretId,
       SECRET_CURRENT,
-      requestToken,
+      versionId,
       currentVersion
     );
     console.log(
-      `${SecretCommandSteps.finishSecret.toString()}: Successfull set ${SECRET_CURRENT} stage to version ${requestToken} for secret ${secretId}`
+      `${SecretCommandSteps.finishSecret.toString()}: Successfull set ${SECRET_CURRENT} stage to version ${
+        versionId ? versionId : 'undefined'
+      } for secret ${secretId}`
+    );
+  }
+
+  private async getTokenStatus(
+    secretId: string,
+    secretStage: string
+  ): Promise<TokenStatus> {
+    const currentAuthTokenString = await this.momentoSecrets.getSecret(
+      secretId,
+      undefined,
+      secretStage
+    );
+
+    if (!currentAuthTokenString) {
+      Common.logAndThrow('Could not get valid secret');
+    }
+    const secretFromManager = SecretManagerTokenStore.fromString(
+      currentAuthTokenString
+    );
+
+    return await this.momentoRefresh.isValidAuthToken(
+      secretFromManager,
+      secretStage
     );
   }
 }

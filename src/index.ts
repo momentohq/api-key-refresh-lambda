@@ -12,11 +12,13 @@ export const handler = async (
 
     const refreshManager = new AuthTokenRefreshManager();
     const response = await refreshManager.handleRotationRequest(eventAsMap);
-
+    console.log(response);
+    
     return {
       statusCode: 200,
       body: response,
     };
+
   } catch (err) {
     return {
       statusCode: 500,

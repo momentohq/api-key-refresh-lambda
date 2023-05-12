@@ -1,23 +1,73 @@
-import {CredentialProvider, RefreshApiToken} from '@gomomento/sdk';
-import {AuthClient} from '@gomomento/sdk/dist/src/auth-client';
+import {
+  AuthClient,
+  CredentialProvider,
+  RefreshAuthToken,
+  CacheClient,
+  Configurations,
+  ListCaches,
+  MomentoErrorCode,
+} from '@gomomento/sdk';
 import {MomentoRefresh} from './momento-refresh';
 import {SecretManagerTokenStore} from '../../models/secret-manager-token';
-import {AuthTokenRefreshManager} from '../../auth-token-refresh-manager';
+import {TokenStatus} from '../../utils/token-status';
+import {Common} from '../../utils/common';
 
 export class MomentoRefreshManager implements MomentoRefresh {
-  public async refreshApiToken(
-    currentApiToken: SecretManagerTokenStore
-  ): Promise<RefreshApiToken.Success> {
-    const refreshResponse = await new AuthClient().refreshApiToken(
+  private readonly momentoAuthClient: AuthClient;
+  private readonly invalidAuthTokenResponse: MomentoErrorCode[] = [
+    MomentoErrorCode.AUTHENTICATION_ERROR,
+    MomentoErrorCode.PERMISSION_ERROR,
+  ];
+
+  constructor() {
+    this.momentoAuthClient = new AuthClient();
+  }
+
+  public async refreshAuthToken(
+    currentAuthToken: SecretManagerTokenStore
+  ): Promise<RefreshAuthToken.Success> {
+    const refreshResponse = await this.momentoAuthClient.refreshAuthToken(
       CredentialProvider.fromString({
-        authToken: currentApiToken.apiToken,
+        authToken: currentAuthToken.getAuthToken(),
       }),
-      currentApiToken.refreshToken
+      currentAuthToken.refreshToken
     );
 
-    if (refreshResponse instanceof RefreshApiToken.Error) {
-      AuthTokenRefreshManager.logAndThrow(refreshResponse.toString());
+    if (refreshResponse instanceof RefreshAuthToken.Error) {
+      Common.logAndThrow(refreshResponse.toString());
     }
-    return refreshResponse as RefreshApiToken.Success;
+    return refreshResponse as RefreshAuthToken.Success;
+  }
+
+  public async isValidAuthToken(
+    authToken: SecretManagerTokenStore,
+    versionStage: string | undefined
+  ): Promise<TokenStatus> {
+    const cacheClient = new CacheClient({
+      credentialProvider: CredentialProvider.fromString({
+        authToken: authToken.getAuthToken(),
+      }),
+      configuration: Configurations.InRegion.Default.latest(),
+      defaultTtlSeconds: 60,
+    });
+    const listResponse = await cacheClient.listCaches();
+
+    if (listResponse instanceof ListCaches.Error) {
+      if (this.invalidAuthTokenResponse.includes(listResponse.errorCode())) {
+        console.warn(
+          `Invalid api token for stage ${
+            versionStage ? versionStage : 'undefined'
+          }, client error code: ${listResponse.errorCode()}`
+        );
+        return TokenStatus.INVALID;
+      } else {
+        // This is best effort, if we get an error other then an authentication error, we can just move on
+        console.warn(
+          `Failed to test api token, client error code: ${listResponse.errorCode()}`
+        );
+        return TokenStatus.NOT_TESTED;
+      }
+    }
+    return TokenStatus.VALID;
   }
 }

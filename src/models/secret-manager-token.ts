@@ -1,16 +1,18 @@
-import {RefreshApiToken} from '@gomomento/sdk';
+import {RefreshAuthToken} from '@gomomento/sdk';
+import {Common} from '../utils/common';
 
 // secrets manager likes to add trailing commas, which JSON.parse handles by throwing an error :)
-// so lets remove those with this easy to read regex!
+// so lets remove those with this *easy* to read regex!
 const trailingCommaRemoval = /(.*?),\s*(\}|])/g;
 
 export class SecretManagerTokenStore {
   apiToken: string;
+  authToken: string;
   refreshToken: string;
   validUntil: number;
 
-  public withApiToken(apiToken: string): SecretManagerTokenStore {
-    this.apiToken = apiToken;
+  public withAuthToken(authToken: string): SecretManagerTokenStore {
+    this.authToken = authToken;
     return this;
   }
 
@@ -24,9 +26,17 @@ export class SecretManagerTokenStore {
     return this;
   }
 
+  public getAuthToken(): string {
+    return this.apiToken
+      ? this.apiToken
+      : this.authToken
+      ? this.authToken
+      : Common.logAndThrow('No valid Auth Token found.');
+  }
+
   public toString(): string {
     return `{
-      "apiToken": "${this.apiToken}",
+      "authToken": "${this.getAuthToken()}",
       "refreshToken": "${this.refreshToken}",
       "validUntil": "${this.validUntil}"
     }`;
@@ -35,25 +45,29 @@ export class SecretManagerTokenStore {
   public static fromString(
     currentSecretAsString: string
   ): SecretManagerTokenStore {
-    const removedTrailingCommas = currentSecretAsString.replace(
-      trailingCommaRemoval,
-      '$1$2'
-    );
-    return Object.assign(
-      new SecretManagerTokenStore(),
-      JSON.parse(removedTrailingCommas)
-    ) as SecretManagerTokenStore;
+    try {
+      const removedTrailingCommas = currentSecretAsString.replace(
+        trailingCommaRemoval,
+        '$1$2'
+      );
+      return Object.assign(
+        new SecretManagerTokenStore(),
+        JSON.parse(removedTrailingCommas)
+      ) as SecretManagerTokenStore;
+    } catch (error) {
+      Common.logErrorAndRethrow(
+        'Failed to get a valid momento token from secrets manager',
+        error
+      );
+    }
   }
 
-  public static fromRefreshApiTokenResponse(
-    refreshApiToken: RefreshApiToken.Success
+  public static fromRefreshAuthTokenResponse(
+    refreshAuthToken: RefreshAuthToken.Success
   ): SecretManagerTokenStore {
-    const base64Jwt = Buffer.from(
-      `{"endpoint": "${refreshApiToken.endpoint}", "api_key": "${refreshApiToken.apiToken}"}`
-    ).toString('base64');
     return new SecretManagerTokenStore()
-      .withApiToken(base64Jwt)
-      .withRefreshToken(refreshApiToken.refreshToken)
-      .withValidUntil(refreshApiToken.expiresAt.epoch());
+      .withAuthToken(refreshAuthToken.getAuthToken())
+      .withRefreshToken(refreshAuthToken.refreshToken)
+      .withValidUntil(refreshAuthToken.expiresAt.epoch());
   }
 }

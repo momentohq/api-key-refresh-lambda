@@ -1,8 +1,13 @@
-import {RefreshApiToken} from '@gomomento/sdk';
+import {RefreshAuthToken} from '@gomomento/sdk';
 import {SecretManagerTokenStore} from '../../models/secret-manager-token';
+import {TokenStatus} from '../../utils/token-status';
 
 export interface MomentoRefresh {
-  refreshApiToken(
-    currentApiToken: SecretManagerTokenStore
-  ): Promise<RefreshApiToken.Success>;
+  refreshAuthToken(
+    currentAuthToken: SecretManagerTokenStore
+  ): Promise<RefreshAuthToken.Success>;
+  isValidAuthToken(
+    currentAuthToken: SecretManagerTokenStore,
+    versionStage: string | undefined
+  ): Promise<TokenStatus>;
 }

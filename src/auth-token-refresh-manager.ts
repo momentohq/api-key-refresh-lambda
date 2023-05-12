@@ -1,38 +1,24 @@
 import {ProcessTokenRefresh} from './process-token-refresh';
-
-const USE_STUB_ENV_KEY = 'USE_STUB_KEY_VALUE';
-
-export enum SecretCommandSteps {
-  createSecret = 'Create',
-  setSecret = 'Set',
-  testSecret = 'Test',
-  finishSecret = 'Finish',
-}
+import {Common} from './utils/common';
+import {SecretCommandSteps} from './utils/secret-command-steps';
 
 export class AuthTokenRefreshManager {
-  public static getEnv(): {
-    useStub: boolean;
-  } {
-    const stubEnvValue = process.env[USE_STUB_ENV_KEY];
-    return {
-      useStub: stubEnvValue ? /^true$/i.test(stubEnvValue) : false,
-    };
-  }
-
-  public static logAndThrow(message: string): never {
-    console.error(message);
-    throw new Error(message);
-  }
-
   public async handleRotationRequest(
     event: Map<string, string>
   ): Promise<string> {
     const refreshToken = new ProcessTokenRefresh();
 
+    const {useStub, skipTestingStage, mockToken, mockTokenStatus} =
+      Common.getEnv();
+
+    console.log(
+      `Env, useStub: ${useStub.toString()}, skipTestingStage: ${skipTestingStage.toString()}, mockToken: ${mockToken.toString()}, mockTokenStatus: ${mockTokenStatus.toString()}`
+    );
+
     if (this.isAutomaticRequest(event)) {
-      console.log('Automatic rotation started.');
-      const {secretId, requestToken, step} = this.parseAutomaticEvent(event);
-      return await refreshToken.automaticRotation(secretId, requestToken, step);
+      const {secretId, versionId, step} = this.parseAutomaticEvent(event);
+      console.log(`${step.toString()}: Automatic rotation started.`);
+      return await refreshToken.automaticRotation(secretId, versionId, step);
     } else {
       console.log('Manual rotation started.');
       const {secretId} = this.parseManualEvent(event);
@@ -50,7 +36,7 @@ export class AuthTokenRefreshManager {
 
   private parseAutomaticEvent(event: Map<string, string>): {
     secretId: string;
-    requestToken: string;
+    versionId: string;
     step: SecretCommandSteps;
   } {
     const secretId = event.get('SecretId');
@@ -64,7 +50,7 @@ export class AuthTokenRefreshManager {
       step === undefined ||
       stepAsEnum === undefined
     ) {
-      AuthTokenRefreshManager.logAndThrow(
+      Common.logAndThrow(
         `Event was malformed, SecretId: ${
           secretId ? secretId : 'null'
         }, ClientRequestToken: ${requestToken ? requestToken : 'null'}, Step: ${
@@ -74,7 +60,7 @@ export class AuthTokenRefreshManager {
     } else {
       return {
         secretId: secretId,
-        requestToken: requestToken,
+        versionId: requestToken,
         step: stepAsEnum,
       };
     }
@@ -85,7 +71,7 @@ export class AuthTokenRefreshManager {
   } {
     const secretId = event.get('SecretId');
     if (secretId === undefined) {
-      AuthTokenRefreshManager.logAndThrow(
+      Common.logAndThrow(
         `Event was malformed, SecretId: ${secretId ? secretId : 'null'}`
       );
     } else {
