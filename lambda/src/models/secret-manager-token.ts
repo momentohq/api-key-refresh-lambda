@@ -1,12 +1,7 @@
 import {RefreshAuthToken} from '@gomomento/sdk';
 import {Common} from '../utils/common';
 
-// secrets manager likes to add trailing commas, which JSON.parse handles by throwing an error :)
-// so lets remove those with this *easy* to read regex!
-const trailingCommaRemoval = /(.*?),\s*(\}|])/g;
-
 export class SecretManagerTokenStore {
-  apiToken: string;
   authToken: string;
   refreshToken: string;
   validUntil: number;
@@ -27,9 +22,7 @@ export class SecretManagerTokenStore {
   }
 
   public getAuthToken(): string {
-    return this.apiToken
-      ? this.apiToken
-      : this.authToken
+    return this.authToken
       ? this.authToken
       : Common.logAndThrow('No valid Auth Token found.');
   }
@@ -46,13 +39,9 @@ export class SecretManagerTokenStore {
     currentSecretAsString: string
   ): SecretManagerTokenStore {
     try {
-      const removedTrailingCommas = currentSecretAsString.replace(
-        trailingCommaRemoval,
-        '$1$2'
-      );
       return Object.assign(
         new SecretManagerTokenStore(),
-        JSON.parse(removedTrailingCommas)
+        JSON.parse(currentSecretAsString)
       ) as SecretManagerTokenStore;
     } catch (error) {
       Common.logErrorAndRethrow(

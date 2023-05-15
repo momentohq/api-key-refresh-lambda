@@ -93,14 +93,14 @@ export class InfrastructureStack extends cdk.Stack {
           'secretsmanager:DescribeSecret',
           'secretsmanager:UpdateversionIdStage',
         ],
-        resources: this.getResourcePermissions(authTokenNames),
+        resources: this.getSecretArns(authTokenNames),
       })
     );
     lambdaRole.addToPolicy(
       new PolicyStatement({
         effect: Effect.ALLOW,
         actions: ['secretsmanager:GetSecretValue'],
-        resources: this.getResourcePermissions(authTokenNames),
+        resources: this.getSecretArns(authTokenNames),
       })
     );
 
@@ -116,9 +116,9 @@ export class InfrastructureStack extends cdk.Stack {
       'momento-auth-token-refresh-lambda',
       {
         runtime: lambda.Runtime.NODEJS_18_X,
-        entry: path.join(__dirname, '/../../src/index.ts'),
-        projectRoot: path.join(__dirname, '/../..'),
-        depsLockFilePath: path.join(__dirname, '/../../package-lock.json'),
+        entry: path.join(__dirname, '/../../lambda/src/index.ts'),
+        projectRoot: path.join(__dirname, '/../../lambda/'),
+        depsLockFilePath: path.join(__dirname, '/../../lambda/package-lock.json'),
         handler: 'handler',
         functionName: 'momento-auth-token-refresh-lambda',
         timeout: Duration.seconds(60),
@@ -143,7 +143,7 @@ export class InfrastructureStack extends cdk.Stack {
     return (secretNames && secretNames.length !== 0) ? secretNames : ['momento/authentication-token']
   }
 
-  private getResourcePermissions(secretNames: string[]): string[] {
+  private getSecretArns(secretNames: string[]): string[] {
     return secretNames.map((names: string) => {
       return Fn.sub('arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:' + names + '*')
     });

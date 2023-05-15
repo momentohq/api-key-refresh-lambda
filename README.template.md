@@ -17,7 +17,7 @@ The generated result can be downloaded as a JSON file, named `momento_token.info
 
 ```json
 {
-  "apiToken": "<jwt api token>",
+  "authToken": "<jwt api token>",
   "refreshToken": "<refresh token>",
   "validUntil": "<epoch timestamp when token expires>"
 }
@@ -35,7 +35,7 @@ for more information on creating AWS secrets, checkout [AWS Secrets Managers gui
 
 To deploy via CLI, follow the instructions here:
 
-[DEVELOPMENT](./DEVELOPMENT.md)
+[DEPLOYMENT](./DEPLOYMENT.md)
 
 ### Manual rotation
 
@@ -58,7 +58,7 @@ Example using the AWS CLI and `jq`:
 ```shell
 aws secretsmanager get-secret-value --secret-id "momento/authentication-token" | jq '.SecretString | fromjson'
 {
-  "apiToken": "<jwt api token>",
+  "authToken": "<jwt api token>",
   "refreshToken": "<refresh token>",
   "validUntil": "<epoch timestamp when token expires>"
 }

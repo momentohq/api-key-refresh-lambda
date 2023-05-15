@@ -13,11 +13,10 @@
 
 ## How to update Momento SDK
 
-Edit [package.json](./package.json) and edit this line:
+Edit [lambda/package.json](./lambda/package.json) and edit this line:
 
 ```json
 "@gomomento/sdk": "^1.14.0",
-"@gomomento/sdk-core": "^1.14.0",
 ```
 
 ## How to build and deploy
@@ -25,7 +24,7 @@ Edit [package.json](./package.json) and edit this line:
 - To deploy to your own account, run:
 
 ```shell
-AWS_PROFILE=<YOUR_AWS_PROFILE_NAME> ./deploy.sh
+AWS_PROFILE=<YOUR_AWS_PROFILE_NAME> ./scripts/deploy.sh
 ```
 
 Below is a list of optional environment variables you can pass in:
@@ -44,7 +43,7 @@ Test environment variables
 ## To tear down stack
 
 ```shell
-AWS_PROFILE=<YOUR_AWS_PROFILE_NAME> ./teardown.sh
+AWS_PROFILE=<YOUR_AWS_PROFILE_NAME> ./scripts/teardown.sh
 ```
 
 or delete the `momento-auth-token-refresh-stack` resource from CloudFormation manually.

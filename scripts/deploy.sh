@@ -1,7 +1,10 @@
 #!/usr/bin/env bash
 set -ex
 
-npm install && npm run build
+pushd lambda/
+  npm install
+  npm run build
+popd
 
 pushd infrastructure/
   npm install

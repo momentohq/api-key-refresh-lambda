@@ -21,7 +21,6 @@
     "@types/node": "^16.18.25",
     "@typescript-eslint/eslint-plugin": "^5.0.0",
     "@typescript-eslint/parser": "^5.0.0",
-    "aws-cdk": "^2.79.1",
     "eslint": "7.32.0",
     "eslint-config-prettier": "8.3.0",
     "eslint-config-standard": "16.0.3",
@@ -40,14 +39,7 @@
   "dependencies": {
     "@aws-sdk/client-cloudwatch": "^3.325.0",
     "@aws-sdk/client-secrets-manager": "^3.321.1",
-    "@cdktf/provider-aws": "14.0.4",
-    "@cdktf/provider-google": "7.0.4",
-    "@cdktf/provider-google-beta": "7.0.4",
     "@gomomento/sdk": "^1.14.0",
-    "@gomomento/sdk-core": "^1.14.0",
-    "aws-cdk-lib": "2.79.0",
-    "cdktf": "0.16.1",
-    "constructs": "10.1.148",
-    "ts.data.json": "2.1.0"
+    "@gomomento/sdk-core": "^1.14.0"
   }
 }
