@@ -10,6 +10,8 @@ pushd lambda/
 popd
 
 pushd infrastructure/
-  npm install
+  npm ci
+  node -v
   npm run build
+  npm run lint
 popd
