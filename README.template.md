@@ -17,7 +17,7 @@ The generated result can be downloaded as a JSON file, named `momento_token.info
 
 ```json
 {
-  "authToken": "<jwt api token>",
+  "authToken": "<jwt auth token>",
   "refreshToken": "<refresh token>",
   "validUntil": "<epoch timestamp when token expires>"
 }
@@ -51,14 +51,14 @@ If you've overriden the default secret name, then replace `momento/authenticatio
 
 ## Retrieving auth token from secret manager
 
-Your application simply needs to retrieve the newly-generated Secret from Secrets Manager. The secret name (unless overwritten) is `momento/authentication-token`, the token is stored in three key value parts, apiToken, refreshToken and validUntil.
+Your application simply needs to retrieve the newly-generated Secret from Secrets Manager. The secret name (unless overwritten) is `momento/authentication-token`, the token is stored in three key value parts, authToken, refreshToken and validUntil.
 
 Example using the AWS CLI and `jq`:
 
 ```shell
 aws secretsmanager get-secret-value --secret-id "momento/authentication-token" | jq '.SecretString | fromjson'
 {
-  "authToken": "<jwt api token>",
+  "authToken": "<jwt auth token>",
   "refreshToken": "<refresh token>",
   "validUntil": "<epoch timestamp when token expires>"
 }

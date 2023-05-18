@@ -157,7 +157,7 @@ export class ProcessTokenRefresh {
 
     switch (pendingTokenStatus) {
       case TokenStatus.VALID:
-        console.log('Valid api token, nothing else to do.');
+        console.log('Valid auth token, nothing else to do.');
         break;
       case TokenStatus.INVALID:
         {
@@ -183,7 +183,7 @@ export class ProcessTokenRefresh {
                 SECRET_CURRENT
               );
               Common.logAndThrow(
-                `Failed to refresh api token for secret, ${secretId}`
+                `Failed to refresh auth token for secret, ${secretId}`
               );
           }
         }

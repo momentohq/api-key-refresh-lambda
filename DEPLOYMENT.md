@@ -7,7 +7,7 @@
 
 ## Prerequisites
 
-- Node 18+
+- Node 16+
 - npm
 - You have your Momento auth token stored away in Secrets Manager (see [README](./README.md) for instructions)
 

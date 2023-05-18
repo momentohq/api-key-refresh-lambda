@@ -49,7 +49,7 @@ export class MomentoRefreshManager implements MomentoRefresh {
     if (listResponse instanceof ListCaches.Error) {
       if (this.invalidAuthTokenResponse.includes(listResponse.errorCode())) {
         console.warn(
-          `Invalid api token for stage ${
+          `Invalid auth token for stage ${
             versionStage ? versionStage : 'undefined'
           }, client error code: ${listResponse.errorCode()}`
         );
@@ -57,7 +57,7 @@ export class MomentoRefreshManager implements MomentoRefresh {
       } else {
         // This is best effort, if we get an error other then an authentication error, we can just move on
         console.warn(
-          `Failed to test api token, client error code: ${listResponse.errorCode()}`
+          `Failed to test auth token, client error code: ${listResponse.errorCode()}`
         );
         return TokenStatus.NOT_TESTED;
       }

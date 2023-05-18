@@ -9,7 +9,7 @@ export class MomentoStubRefreshManager implements MomentoRefresh {
     _currentAuthToken: SecretManagerTokenStore
   ): Promise<RefreshAuthToken.Success> {
     return new RefreshAuthToken.Success(
-      'apiToken',
+      'authToken',
       'refreshToken',
       'endpoint',
       ExpiresAt.fromEpoch(1683692355)
