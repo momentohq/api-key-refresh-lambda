@@ -16,7 +16,7 @@
 Edit [lambda/package.json](./lambda/package.json) and edit this line:
 
 ```json
-"@gomomento/sdk": "^1.14.0",
+"@gomomento/sdk": "^1.18.0",
 ```
 
 ## How to build and deploy

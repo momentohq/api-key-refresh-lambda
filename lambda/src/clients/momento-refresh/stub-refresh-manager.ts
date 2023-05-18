@@ -1,5 +1,4 @@
-import {RefreshAuthToken} from '@gomomento/sdk';
-import {ExpiresAt} from '@gomomento/sdk-core';
+import {RefreshAuthToken, ExpiresAt} from '@gomomento/sdk';
 import {MomentoRefresh} from './momento-refresh';
 import {SecretManagerTokenStore} from '../../models/secret-manager-token';
 import {TokenStatus} from '../../utils/token-status';

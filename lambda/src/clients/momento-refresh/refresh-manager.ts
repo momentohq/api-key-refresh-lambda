@@ -13,25 +13,19 @@ import {TokenStatus} from '../../utils/token-status';
 import {Common} from '../../utils/common';
 
 export class MomentoRefreshManager implements MomentoRefresh {
-  private readonly momentoAuthClient: AuthClient;
   private readonly invalidAuthTokenResponse: MomentoErrorCode[] = [
     MomentoErrorCode.AUTHENTICATION_ERROR,
     MomentoErrorCode.PERMISSION_ERROR,
   ];
 
-  constructor() {
-    this.momentoAuthClient = new AuthClient();
-  }
-
   public async refreshAuthToken(
     currentAuthToken: SecretManagerTokenStore
   ): Promise<RefreshAuthToken.Success> {
-    const refreshResponse = await this.momentoAuthClient.refreshAuthToken(
-      CredentialProvider.fromString({
+    const refreshResponse = await new AuthClient({
+      credentialProvider: CredentialProvider.fromString({
         authToken: currentAuthToken.getAuthToken(),
       }),
-      currentAuthToken.refreshToken
-    );
+    }).refreshAuthToken(currentAuthToken.refreshToken);
 
     if (refreshResponse instanceof RefreshAuthToken.Error) {
       Common.logAndThrow(refreshResponse.toString());
