@@ -13,7 +13,6 @@ import {
 } from 'aws-cdk-lib/aws-iam';
 import {NodejsFunction} from 'aws-cdk-lib/aws-lambda-nodejs';
 import path = require('path');
-import {randomUUID} from 'crypto';
 
 interface AuthTokenOptions {
   // The name you would like to give to the Secret containing your Momento auth token, 
@@ -35,7 +34,7 @@ export class InfrastructureStack extends cdk.Stack {
     super(scope, id, stackProps);
 
     const authTokenNames = this.getAuthTokenSecretNames(authTokenOptions.momentoAuthTokenSecretName)
-    let momentoAuthTokenSecret: Map<string, secretsmanager.Secret> = new Map<string, secretsmanager.Secret>();
+    const momentoAuthTokenSecret: Map<string, secretsmanager.Secret> = new Map<string, secretsmanager.Secret>();
 
     const lambdaRole = new iam.Role(
       this,
