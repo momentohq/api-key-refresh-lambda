@@ -2,8 +2,10 @@
 set -ex
 
 pushd lambda/
-  npm install
+  npm ci
+  node -v
   npm run build
+  npm run lint
   npm run test
 popd
 

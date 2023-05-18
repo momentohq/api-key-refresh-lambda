@@ -35,18 +35,7 @@ jobs:
           node-version: ${{ matrix.node }}
           cache: npm
 
-      - name: Install dependencies
-        run: |
-          npm ci
-          node -v
-
-      - name: Build
-        run: npm run build
-
-      - name: Lint
-        run: npm run lint
-
-      - name: Test using jest
+      - name: Build & Test using jest
         run: |
           node -v
           ./scripts/build-and-test.sh
