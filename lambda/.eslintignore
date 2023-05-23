@@ -1,0 +1,10 @@
+node_modules
+dist
+**/*.d.ts
+docker
+cdk.out
+infrastructure
+**/stub-*.ts
+**/index.ts
+.eslintrc.js
+jest.config.ts

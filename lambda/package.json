@@ -1,0 +1,44 @@
+{
+  "name": "auth-token-refresh-lambda",
+  "main": "dist/src/index.js",
+  "types": "dist/src/index.d.ts",
+  "files": [
+    "dist/src"
+  ],
+  "scripts": {
+    "prebuild": "eslint . --ext .ts",
+    "build": "tsc",
+    "watch": "tsc -w",
+    "test": "jest --runInBand",
+    "cdk": "cdk",
+    "lint": "eslint . --ext .ts",
+    "format": "eslint . --ext .ts --fix"
+  },
+  "devDependencies": {
+    "@aws-sdk/types": "^3.310.0",
+    "@types/aws-lambda": "^8.10.115",
+    "@types/jest": "^27.5.2",
+    "@types/node": "^16.18.25",
+    "@typescript-eslint/eslint-plugin": "^5.0.0",
+    "@typescript-eslint/parser": "^5.0.0",
+    "eslint": "7.32.0",
+    "eslint-config-prettier": "8.3.0",
+    "eslint-config-standard": "16.0.3",
+    "eslint-import-resolver-typescript": "^3.5.5",
+    "eslint-plugin-import": "2.24.2",
+    "eslint-plugin-node": "11.1.0",
+    "eslint-plugin-prettier": "4.0.0",
+    "eslint-plugin-promise": "5.1.0",
+    "jest": "^29",
+    "jest-extended": "^3.2.3",
+    "prettier": "2.4.0",
+    "ts-jest": "^29",
+    "ts-node": "10.2.1",
+    "typescript": "4.4.2"
+  },
+  "dependencies": {
+    "@aws-sdk/client-cloudwatch": "^3.325.0",
+    "@aws-sdk/client-secrets-manager": "^3.321.1",
+    "@gomomento/sdk": "^1.18.0"
+  }
+}
