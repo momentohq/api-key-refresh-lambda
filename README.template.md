@@ -7,7 +7,7 @@ This repo provides an example solution to manage and auto-refresh your Momento A
 ## Prerequisites
 
 1. You have an AWS account
-2. You have a Momento auth token, and you've stored it (in plaintext) in Secrets Manager
+2. You have a Momento auth token
 
 If you are unsure where to get your auth token, one can be provided by [logging into the Momento console](https://console.gomomento.com/tokens) and generating one through the UI.
 
@@ -22,14 +22,6 @@ The generated result can be downloaded as a JSON file, named `momento_token.info
   "validUntil": "<epoch timestamp when token expires>"
 }
 ```
-
-This json file can then be used to create a secret in AWS secret manager, like so
-
-```shell
-aws secretsmanager create-secret --name "momento/authentication-token" --secret-string file://momento_token_info.json
-```
-
-for more information on creating AWS secrets, checkout [AWS Secrets Managers guide](https://docs.aws.amazon.com/secretsmanager/latest/userguide/create_secret.html).
 
 ## Deploying to account
 

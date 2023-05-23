@@ -40,6 +40,20 @@ Test environment variables
 - `MOCK_TOKEN_ENV_KEY_VALUE`: override if you would like to return a different mocked response from Secrets Manager for `getSecret` calls, requires `USE_STUB_KEY_VALUE` to be `true`. **Default:** `{}`
 - `MOCK_TOKEN_STATUS_ENV_KEY_VALUE`: override if you would like to return a different mocked response for token status, this is to test cloudwatch Metrics, requires `USE_STUB_KEY_VALUE` to be `true`. **Default:** `[['AWSCURRENT', TokenStatus.VALID], ['AWSPENDING', TokenStatus.VALID]]`
 
+Upon competion of deployment, your secrets will be created in AWS Secret Manager, however, they now need to be populated. This can be done through AWS Secrets Manager console, or throught the aws cli.
+
+For more info on what needs to be stored and where to get the token, checkout the [README](./README.md) `Prerequisites` section.
+
+The JSON Auth Token file can then be used to create a secret in AWS secret manager, like so
+
+```shell
+aws secretsmanager create-secret --name "momento/authentication-token" --secret-string file://momento_token_info.json
+```
+
+this will need to be done for each secrets listed in `MOMENTO_AUTH_TOKEN_SECRET_NAME`.
+
+For more information on creating AWS secrets, checkout [AWS Secrets Managers guide](https://docs.aws.amazon.com/secretsmanager/latest/userguide/create_secret.html).
+
 ## To tear down stack
 
 ```shell
