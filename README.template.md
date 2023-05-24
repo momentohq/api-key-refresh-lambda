@@ -1,19 +1,19 @@
 {{ ossHeader }}
 
-# Momento Auth Token Refresh Lambda
+# Momento auth token refresh using an AWS Lambda function
 
-This repo provides an example solution to manage and auto-refresh your Momento Authentication Tokens. This is done via a NodeJs 16 function deployed to your AWS account.
+This repo provides an example solution to manage and auto-refresh Momento authentication tokens for best security practices. This is done via a Node.js&reg; 16 function deployed to AWS Lambda in your AWS account.
 
 ## Prerequisites
 
-1. You have an AWS account
-2. You have a Momento auth token
+1. An AWS account with a role which can run AWS CDK
+2. A Momento auth token downloaded from the [Momento console](https://console.gomomento.com/tokens) to a JSON file.
 
-If you are unsure where to get your auth token, one can be provided by [logging into the Momento console](https://console.gomomento.com/tokens) and generating one through the UI.
+If you need a Momento auth token, [log into the Momento console](https://console.gomomento.com/tokens) and generate one using the UI.
 
-Instructions on how to generate your token can be found [here in our public docs](https://docs.momentohq.com/getting-started#step-2-create-an-authentication-token-in-the-momento-console).
+Instructions on how to generate your token can be found [in our public docs](https://docs.momentohq.com/getting-started#step-2-create-an-authentication-token-in-the-momento-console).
 
-The generated result can be downloaded as a JSON file, named `momento_token.info.json`, the contents will look like,
+The generated result should be downloaded as a JSON file for safe keeping, named `momento_token.info.json`. Open this fil The contents of the downloaded JSON file will look like:
 
 ```json
 {
@@ -23,15 +23,15 @@ The generated result can be downloaded as a JSON file, named `momento_token.info
 }
 ```
 
-## Deploying to account
+## Deploying the Lambda function to an AWS account
 
-To deploy via CLI, follow the instructions here:
+Using the command line to run , deploy the Lambda function, auth token via CLI, follow the instructions here:
 
 [DEPLOYMENT](./DEPLOYMENT.md)
 
 ### Manual rotation
 
-With this lambda deployed you can also manually invoke your lambda to rotate a secret for you. Simply send an event with the following properties:
+With the Lambda function in this repo deployed, you can manually invoke the Lambda function to rotate a secret for you. Simply send an event with the following properties:
 
 ```json
 {
@@ -43,7 +43,7 @@ If you've overriden the default secret name, then replace `momento/authenticatio
 
 ## Retrieving auth token from secret manager
 
-Your application simply needs to retrieve the newly-generated Secret from Secrets Manager. The secret name (unless overwritten) is `momento/authentication-token`, the token is stored in three key value parts, authToken, refreshToken and validUntil.
+Your application simply needs to retrieve the newly-generated secret from AWS Secrets Manager. The secret name (unless overwritten) is `momento/authentication-token`, the token is stored in three key value parts, authToken, refreshToken, and validUntil.
 
 Example using the AWS CLI and `jq`:
 
