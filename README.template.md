@@ -25,7 +25,7 @@ The generated result should be downloaded as a JSON file for safe keeping, named
 
 ## Deploying the Lambda function to an AWS account
 
-Using the command line to run , deploy the Lambda function, auth token via CLI, follow the instructions here:
+Using the command line; deploy the function, IAM role, auth token, etc., via CLI, with the following instructions:
 
 [DEPLOYMENT](./DEPLOYMENT.md)
 
