@@ -9,7 +9,7 @@
 
 - [Node.js&reg;](https://nodejs.org/) v16+
 - [Node Package Manager (npm)](https://www.npmjs.com/)
-- A Momento auth token JSON file created in the [Momento console](https://console.gomomento.com/tokens)
+- A Momento api key JSON file created in the [Momento console](https://console.gomomento.com/tokens)
 - AWS [command line tools](https://aws.amazon.com/cli/)
 
 ## How to update Momento Javascript SDK
@@ -30,14 +30,14 @@ AWS_PROFILE=<YOUR_AWS_PROFILE_NAME> ./scripts/deploy.sh
 
 Below is a list of optional environment variables you can pass in to deploy.sh:
 
-- `AUTO_ROTATION_IN_DAYS:` override the schedule (in days) in which the auth token will be refreshed. **Default:** 1 day
+- `AUTO_ROTATION_IN_DAYS:` override the schedule (in days) in which the api key will be refreshed. **Default:** 1 day
 - `KMS_KEY_ARN`: override if you want to use your own KMS key to encrypt your secret in Secrets Manager. **Default:** `null`
-- `MOMENTO_AUTH_TOKEN_SECRET_NAME`: override the name of the Secret created by the stack to store your auth token, multiple names can be added here separated by commas, this will allow the lambda to rotate multiple secrets. **Default:** `momento/authentication-token` **Example** `momento/auth-token-0,momento/auth-token-1`
-- `SKIP_TEST_STEP_ENV_KEY_VALUE`: override if you want to skip the auth token testing, this will also disable CloudWatch Metrics. **Default:** `false`
+- `MOMENTO_AUTH_TOKEN_SECRET_NAME`: override the name of the Secret created by the stack to store your api key, multiple names can be added here separated by commas, this will allow the lambda to rotate multiple secrets. **Default:** `momento/authentication-token` **Example** `momento/auth-token-0,momento/auth-token-1`
+- `SKIP_TEST_STEP_ENV_KEY_VALUE`: override if you want to skip the api key testing, this will also disable CloudWatch Metrics. **Default:** `false`
 
 Test environment variables
 
-- `USE_STUB_KEY_VALUE`: override if you would like to stub out client responses, this is for testing purposes and no auth token will be refreshed while this is `true`. **Default:** `false`
+- `USE_STUB_KEY_VALUE`: override if you would like to stub out client responses, this is for testing purposes and no api key will be refreshed while this is `true`. **Default:** `false`
 - `MOCK_TOKEN_ENV_KEY_VALUE`: override if you would like to return a different mocked response from Secrets Manager for `getSecret` calls, requires `USE_STUB_KEY_VALUE` to be `true`. **Default:** `{}`
 - `MOCK_TOKEN_STATUS_ENV_KEY_VALUE`: override if you would like to return a different mocked response for token status, this is to test cloudwatch Metrics, requires `USE_STUB_KEY_VALUE` to be `true`. **Default:** `[['AWSCURRENT', TokenStatus.VALID], ['AWSPENDING', TokenStatus.VALID]]`
 
@@ -45,7 +45,7 @@ Upon completion of deployment, your secrets will be created in AWS Secret Manage
 
 For more info on what needs to be stored and where to get the token, checkout the [README](./README.md) `Prerequisites` section.
 
-The JSON Auth Token file can then be used to create a secret in AWS secret manager, like so
+The JSON api key file can then be used to create a secret in AWS secret manager, like so
 
 ```shell
 aws secretsmanager create-secret --name "momento/authentication-token" --secret-string file://momento_token_info.json

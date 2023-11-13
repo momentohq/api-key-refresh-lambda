@@ -1,15 +1,15 @@
 {{ ossHeader }}
 
-# Momento auth token refresh using an AWS Lambda function
+# Momento api key refresh using an AWS Lambda function
 
 This repo provides an example solution to manage and auto-refresh Momento authentication tokens for best security practices. This is done via a Node.js&reg; 16 function deployed to AWS Lambda in your AWS account.
 
 ## Prerequisites
 
 1. An AWS account with a role which can run AWS CDK
-2. A Momento auth token downloaded from the [Momento console](https://console.gomomento.com/tokens) to a JSON file.
+2. A Momento api key downloaded from the [Momento console](https://console.gomomento.com/tokens) to a JSON file.
 
-If you need a Momento auth token, [log into the Momento console](https://console.gomomento.com/tokens) and generate one using the UI.
+If you need a Momento api key, [log into the Momento console](https://console.gomomento.com/tokens) and generate one using the UI.
 
 Instructions on how to generate your token can be found [in our public docs](https://docs.momentohq.com/getting-started#step-2-create-an-authentication-token-in-the-momento-console).
 
@@ -17,7 +17,7 @@ The generated result should be downloaded as a JSON file for safe keeping, named
 
 ```json
 {
-  "authToken": "<jwt auth token>",
+  "apiKey": "<jwt api key>",
   "refreshToken": "<refresh token>",
   "validUntil": "<epoch timestamp when token expires>"
 }
@@ -25,7 +25,7 @@ The generated result should be downloaded as a JSON file for safe keeping, named
 
 ## Deploying the Lambda function to an AWS account
 
-Using the command line; deploy the function, IAM role, auth token, etc., via CLI, with the following instructions:
+Using the command line; deploy the function, IAM role, api key, etc., via CLI, with the following instructions:
 
 [DEPLOYMENT](./DEPLOYMENT.md)
 
@@ -41,16 +41,16 @@ With the Lambda function in this repo deployed, you can manually invoke the Lamb
 
 If you've overriden the default secret name, then replace `momento/authentication-token` with your custom name.
 
-## Retrieving auth token from secret manager
+## Retrieving api key from secret manager
 
-Your application simply needs to retrieve the newly-generated secret from AWS Secrets Manager. The secret name (unless overwritten) is `momento/authentication-token`, the token is stored in three key value parts, authToken, refreshToken, and validUntil.
+Your application simply needs to retrieve the newly-generated secret from AWS Secrets Manager. The secret name (unless overwritten) is `momento/authentication-token`, the token is stored in three key value parts, apiKey, refreshToken, and validUntil.
 
 Example using the AWS CLI and `jq`:
 
 ```shell
 aws secretsmanager get-secret-value --secret-id "momento/authentication-token" | jq '.SecretString | fromjson'
 {
-  "authToken": "<jwt auth token>",
+  "apiKey": "<jwt api key>",
   "refreshToken": "<refresh token>",
   "validUntil": "<epoch timestamp when token expires>"
 }
