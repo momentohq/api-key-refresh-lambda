@@ -15,7 +15,7 @@ import {NodejsFunction} from 'aws-cdk-lib/aws-lambda-nodejs';
 import path = require('path');
 
 interface AuthTokenOptions {
-  // The name you would like to give to the Secret containing your Momento auth token, 
+  // The name you would like to give to the Secret containing your Momento api key, 
   // multiple secrets can be refreshed by adding a comma spliced list
   momentoAuthTokenSecretName?: string[];
   // Override this if you wish to change when the secret is automatically rotated.
