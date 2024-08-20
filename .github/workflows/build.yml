@@ -23,7 +23,7 @@ jobs:
       matrix:
         node: [18]
     name: Test on Node ${{ matrix.node }}
-    runs-on: macos-latest
+    runs-on: ubuntu-latest
 
     steps:
       - name: Setup repo
