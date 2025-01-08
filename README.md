@@ -6,7 +6,7 @@
 
 # Momento api key refresh using an AWS Lambda function
 
-This repo provides an example solution to manage and auto-refresh Momento authentication tokens for best security practices. This is done via a Node.js&reg; 18 function deployed to AWS Lambda in your AWS account.
+This repo provides an example solution to manage and auto-refresh Momento authentication tokens for best security practices. This is done via a Node.js&reg; 16 function deployed to AWS Lambda in your AWS account.
 
 ## Prerequisites
 
