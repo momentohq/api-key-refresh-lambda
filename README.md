@@ -4,7 +4,11 @@
 [![project stability](https://momentohq.github.io/standards-and-practices/badges/project-stability-alpha.svg)](https://github.com/momentohq/standards-and-practices/blob/main/docs/momento-on-github.md) 
 
 
-# Momento api key refresh using an AWS Lambda function
+# Momento api key refresh using an AWS Lambda function (DEPRECATED)
+
+!!! This repo is now deprecated !!!
+
+V1 API keys are no longer supported by Momento, and this project has not been maintained. If your needs require it, don't hesitate to reach out to `support@momentohq.com` and we can revitalize a newer, better version of this solution. Until then, we have kept this repo open for historical purposes.
 
 This repo provides an example solution to manage and auto-refresh Momento authentication tokens for best security practices. This is done via a Node.js&reg; 18 function deployed to AWS Lambda in your AWS account.
 
